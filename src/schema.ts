@@ -12,7 +12,7 @@ const BrandSchema = z.object({
   colors: z.array(z.string()).optional(),
   font: z.array(z.string()).optional(),
   logo: LogoSchema.optional(),
-  referenceAssets: z.array(z.string()).optional(),
+  referenceAssets: z.union([z.string(), z.array(z.string())]).optional(),
   prohibitedWords: z.array(z.string()).optional(),
 });
 
@@ -26,7 +26,7 @@ export const ProductSchema = z.object({
 const LocaleMessageSchema = z.object({
   headline: z.string(),
   subhead: z.string().optional(),
-  cta: z.string(),
+  cta: z.string().optional(),
   font: z.array(z.string()).optional(),
 });
 

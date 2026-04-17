@@ -5,8 +5,8 @@
   "type": "module",
   "engines": { "node": ">=20" },
   "scripts": {
-    "start": "tsx src/cli.ts --brief payloadExample.json",
-    "dry-run": "tsx src/cli.ts --brief payloadExample.json --dry-run",
+    "start": "tsx src/cli.ts --brief inputs/payloads/td_back_to_school.json",
+    "dry-run": "tsx src/cli.ts --brief inputs/payloads/td_back_to_school.json --dry-run",
     "dev": "tsx src/cli.ts"
   },
   "dependencies": {

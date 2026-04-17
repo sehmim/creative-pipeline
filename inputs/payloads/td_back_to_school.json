@@ -1,0 +1,51 @@
+{
+  "campaignName": "Back to School Banking 2026",
+
+  "brand": {
+    "name": "TD Bank",
+    "description": "Friendly, approachable, confident Canadian bank. Bold green identity, clean modern design, warm and inclusive tone",
+    "colors": ["#008A4B", "#00A857", "#FFFFFF", "#2D2D2D"],
+    "font": ["TD Graphik", "Helvetica Neue"],
+    "logo": {
+      "path": "brands/td/logo.png",
+      "placement": "top-left",
+      "maxHeightPercent": 6
+    },
+    "referenceAssets": "brands/td/",
+    "prohibitedWords": ["free money", "guaranteed approval", "no credit check", "instant approval", "risk-free"]
+  },
+
+  "resultingImagePrompt": "University campus setting, diverse group of students, backpacks and laptops, early September autumn light, warm and optimistic mood, lifestyle photography",
+
+  "products": [
+    {
+      "id": "td-student-chequing",
+      "name": "TD Student Chequing Account",
+      "description": "A zero monthly fee chequing account designed for full-time students aged 17-29, featuring a TD Access Card, unlimited transactions, and no minimum balance requirement. Clean green and white banking aesthetic."
+    },
+    {
+      "id": "td-student-visa",
+      "name": "TD Rewards Visa Card for Students",
+      "description": "A no annual fee Visa credit card built for students with no prior credit history. Earns TD Rewards points on every purchase. Card shown in signature TD green with modern minimal design."
+    }
+  ],
+
+  "targeting": {
+    "audience": "Canadian university and college students aged 17-24, first-time banking customers, value-conscious, digitally native",
+    "regions": ["en", "fr"]
+  },
+
+  "messages": {
+    "en": {
+      "headline": "Bank Smarter This Semester",
+      "subhead": "$0 monthly fees. $0 annual fees. 100% student-friendly.",
+      "cta": "Open Your Account"
+    },
+    "fr": {
+      "headline": "Une banque pensée pour vos études",
+      "subhead": "0 $ de frais mensuels. 0 $ de frais annuels. 100 % étudiant.",
+      "cta": "Ouvrir un compte",
+      "font": ["Playfair Display"]
+    }
+  }
+}

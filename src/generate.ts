@@ -2,15 +2,12 @@
 
 import Replicate from "replicate";
 import { readFileSync, writeFileSync, mkdirSync } from "fs";
-import { resolve, join, dirname } from "path";
+import { resolve, join, dirname, extname } from "path";
 import sharp from "sharp";
 import { BriefSchema, type Brief, type Product } from "./schema";
-import {
-  scanProhibitedWords,
-  checkLogoPresence,
-  checkBrandColors,
-  type ComplianceResult,
-} from "./compliance";
+import { scanProhibitedWords, checkLogoPresence, checkBrandColors, type ComplianceResult } from "./compliance";
+import { writeReport, type AssetRecord } from "./report";
+import { escapeXml, resolveFont, resolveReferenceAssets } from "./util";
 
 const replicate = new Replicate();
 
@@ -31,9 +28,7 @@ function validateBrief(filePath: string): Brief {
 
   if (!result.success) {
     console.error("Brief validation failed:");
-    result.error.issues.forEach((i) =>
-      console.error(`  ${i.path.join(".")}: ${i.message}`)
-    );
+    result.error.issues.forEach((i) => console.error(`  ${i.path.join(".")}: ${i.message}`));
     process.exit(1);
   }
 
@@ -53,8 +48,9 @@ function validateBrief(filePath: string): Brief {
 function buildPrompt(product: Product, brief: Brief): string {
   const parts = [
     `Commercial product photography of ${product.description}.`,
+    `The product is the undisputed hero and sole focus of the image — centered, prominent, and sharply in focus. Nothing competes with it for attention.`,
     `Target audience: ${brief.targeting.audience}.`,
-    `Clean composition with space for text overlay, studio lighting.`,
+    `Clean composition with ample negative space at the bottom third for text overlay. Studio lighting with a subtle spotlight on the product.`,
   ];
 
   if (brief.brand?.description) parts.push(`Brand aesthetic: ${brief.brand.description}.`);
@@ -75,11 +71,15 @@ async function generateHero(product: Product, brief: Brief, inputsDir: string): 
   };
 
   // referenceAssets influence generation style; brand.logo is composited separately post-gen
-  if (brief.brand?.referenceAssets?.length) {
-    input.input_images = brief.brand.referenceAssets.map((p) => {
-      const buf = readFileSync(resolve(inputsDir, p));
-      return `data:image/jpeg;base64,${buf.toString("base64")}`;
-    });
+  if (brief.brand?.referenceAssets) {
+    const files = resolveReferenceAssets(brief.brand.referenceAssets, inputsDir);
+    if (files.length) {
+      input.input_images = files.map((p) => {
+        const buf = readFileSync(resolve(inputsDir, p));
+        const mime = extname(p).toLowerCase() === ".png" ? "image/png" : "image/jpeg";
+        return `data:${mime};base64,${buf.toString("base64")}`;
+      });
+    }
   }
 
   console.log(`  Generating hero for "${product.name}"...`);
@@ -89,16 +89,6 @@ async function generateHero(product: Product, brief: Brief, inputsDir: string): 
 }
 
 // ── 4. Composition ──────────────────────────────────────────
-
-// Font cascade: per-locale override → brand font → system sans-serif
-function resolveFont(brief: Brief, locale: string): string {
-  const msgFonts = brief.messages[locale]?.font;
-  if (msgFonts?.length) return msgFonts.map((f) => `'${f}'`).join(", ");
-
-  if (brief.brand?.font?.length) return brief.brand.font.map((f) => `'${f}'`).join(", ");
-
-  return "sans-serif";
-}
 
 async function composeVariant(
   heroBuffer: Buffer,
@@ -122,9 +112,10 @@ async function composeVariant(
       <text x="${w / 2}" y="${h * 0.82}" font-family="${font}, sans-serif"
             font-size="${Math.round(w * 0.03)}"
             fill="rgba(255,255,255,0.85)" text-anchor="middle">${escapeXml(msg.subhead)}</text>` : ""}
+      ${msg.cta ? `
       <text x="${w / 2}" y="${h * 0.92}" font-family="${font}, sans-serif"
             font-size="${Math.round(w * 0.035)}" font-weight="600"
-            fill="white" text-anchor="middle">${escapeXml(msg.cta)}</text>
+            fill="white" text-anchor="middle">${escapeXml(msg.cta)}</text>` : ""}
     </svg>`;
 
   const composites: sharp.OverlayOptions[] = [
@@ -155,92 +146,6 @@ async function composeVariant(
     .composite(composites)
     .png()
     .toBuffer();
-}
-
-function escapeXml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/'/g, "&apos;").replace(/"/g, "&quot;");
-}
-
-// ── 5. Report ───────────────────────────────────────────────
-
-interface AssetRecord {
-  productId: string;
-  productName: string;
-  ratio: RatioKey;
-  locale: string;
-  path: string;
-  heroSource: "reused" | "generated";
-  prompt?: string;
-  compliance: {
-    logoPresence: ComplianceResult;
-    brandColors: ComplianceResult;
-  };
-}
-
-function writeReport(runDir: string, brief: Brief, assets: AssetRecord[], prohibitedWordsResult: ComplianceResult) {
-  const report = {
-    campaignName: brief.campaignName,
-    brand: brief.brand?.name || "none",
-    generatedAt: new Date().toISOString(),
-    totalAssets: assets.length,
-    compliance: { prohibitedWords: prohibitedWordsResult },
-    assets,
-  };
-  writeFileSync(join(runDir, "report.json"), JSON.stringify(report, null, 2));
-
-  const html = `<!DOCTYPE html>
-<html><head>
-<meta charset="utf-8">
-<title>${escapeXml(brief.campaignName)} — Report</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: system-ui, sans-serif; background: #0a0a0a; color: #e0e0e0; padding: 2rem; }
-  h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
-  .meta { color: #888; margin-bottom: 2rem; font-size: 0.85rem; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
-  .card { background: #1a1a1a; border-radius: 8px; overflow: hidden; }
-  .card img { width: 100%; display: block; }
-  .card .info { padding: 0.75rem; font-size: 0.8rem; }
-  .card .info span { color: #888; }
-  .tag { display: inline-block; background: #2a2a2a; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; margin-right: 4px; }
-  .tag.generated { background: #1a3a2a; color: #4ade80; }
-  .tag.reused { background: #1a2a3a; color: #60a5fa; }
-  .tag.compliant { background: #1a3a2a; color: #4ade80; }
-  .tag.violation { background: #3a1a1a; color: #f87171; }
-  .compliance-summary { margin-bottom: 1.5rem; font-size: 0.85rem; }
-  .compliance-summary .pass { color: #4ade80; }
-  .compliance-summary .fail { color: #f87171; }
-</style>
-</head><body>
-<h1>${escapeXml(brief.campaignName)}</h1>
-<p class="meta">Brand: ${escapeXml(brief.brand?.name || "none")} · ${assets.length} assets · Generated ${new Date().toLocaleDateString()}</p>
-<div class="compliance-summary">
-  ${prohibitedWordsResult.passed
-    ? '<span class="pass">✓ No prohibited words</span>'
-    : `<span class="fail">⚠ Prohibited words: ${prohibitedWordsResult.issues.map((i) => escapeXml(i.message)).join(" · ")}</span>`
-  }
-</div>
-<div class="grid">
-${assets.map((a) => `
-  <div class="card">
-    <img src="${a.path}" alt="${escapeXml(a.productName)} ${a.ratio} ${a.locale}">
-    <div class="info">
-      <strong>${escapeXml(a.productName)}</strong><br>
-      <span>${RATIOS[a.ratio].label}</span><br>
-      <span class="tag">${a.locale.toUpperCase()}</span>
-      <span class="tag ${a.heroSource}">${a.heroSource}</span>
-      ${a.compliance.logoPresence.passed && a.compliance.brandColors.passed
-        ? '<span class="tag compliant">✓ compliant</span>'
-        : '<span class="tag violation">⚠ compliance</span>'
-      }
-    </div>
-  </div>
-`).join("")}
-</div>
-</body></html>`;
-
-  writeFileSync(join(runDir, "report.html"), html);
 }
 
 // ── Main Pipeline ───────────────────────────────────────────
@@ -309,9 +214,12 @@ export async function runPipeline(briefPath: string, inputsDir: string, outputDi
         assets.push({
           productId: product.id,
           productName: product.name,
-          ratio, locale,
+          ratio,
+          ratioLabel: RATIOS[ratio].label,
+          locale,
           path: `${product.id}/${ratio}/${locale}.png`,
-          heroSource, prompt,
+          heroSource,
+          prompt,
           compliance: { logoPresence: logoPresenceResult, brandColors: brandColorsResult },
         });
 
