@@ -1,0 +1,55 @@
+{
+  "campaignName": "Summer Hydration Blitz 2026",
+
+  "brand": {
+    "name": "AquaPure",
+    "description": "Clean, modern, health-forward premium hydration brand",
+    "colors": ["#0A4DA2", "#00C9A7", "#FFFFFF"],
+    "font": ["Montserrat", "Helvetica"],
+    "logo": {
+      "path": "brands/aquapure/logo.png",
+      "placement": "bottom-right",
+      "maxHeightPercent": 8
+    },
+    "referenceAssets": [
+      "brands/aquapure/ref-product.jpg",
+      "brands/aquapure/ref-lifestyle.jpg"
+    ],
+    "prohibitedWords": ["miracle", "guaranteed", "cure"]
+  },
+
+  "resultingImagePrompt": "Cinematic product shot in tropical outdoor setting, golden hour lighting, water droplets on bottle",
+
+  "products": [
+    {
+      "id": "aquapure-sport",
+      "name": "AquaPure Sport Electrolyte Water",
+      "description": "A premium electrolyte-enhanced water in a sleek blue bottle, designed for athletes.",
+      "heroAsset": "brands/aquapure/existing-sport-hero.jpg"
+    },
+    {
+      "id": "aquapure-zen",
+      "name": "AquaPure Zen Botanical Water",
+      "description": "A calming botanical-infused water in an elegant frosted glass bottle with lavender and mint."
+    }
+  ],
+
+  "targeting": {
+    "audience": "Health-conscious millennials and Gen-Z, ages 22-38",
+    "regions": ["en", "fr"]
+  },
+
+  "messages": {
+    "en": {
+      "headline": "Hydrate Your Hustle",
+      "subhead": "Premium hydration, powered by nature",
+      "cta": "Shop Now"
+    },
+    "fr": {
+      "headline": "Hydratez votre ambition",
+      "subhead": "L'hydratation premium, par la nature",
+      "cta": "Achetez maintenant",
+      "font": ["Playfair Display"]
+    }
+  }
+}

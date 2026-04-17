@@ -1,0 +1,24 @@
+{
+  "name": "creative-pipeline",
+  "version": "1.0.0",
+  "description": "Social ad campaign asset generator using FLUX 2 Pro",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "tsx src/cli.ts --brief payloadExample.json",
+    "dry-run": "tsx src/cli.ts --brief payloadExample.json --dry-run",
+    "dev": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5",
+    "replicate": "^1.0.1",
+    "sharp": "^0.33.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.15.0",
+    "typescript": "^5.5.0"
+  }
+}
