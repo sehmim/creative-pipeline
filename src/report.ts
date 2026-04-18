@@ -65,14 +65,42 @@ export function writeReport(
 
 // ── HTML rendering ───────────────────────────────────────────
 
-function checkRow(label: string, result: ComplianceResult): string {
-  const status = result.passed
-    ? `<span class="badge pass">PASS</span>`
-    : `<span class="badge fail">FAIL</span>`;
-  const issues = result.passed
-    ? ""
-    : `<ul class="issues">${result.issues.map((i) => `<li>${escapeXml(i.message)}</li>`).join("")}</ul>`;
-  return `<tr><td>${label}</td><td>${status}</td></tr>${issues ? `<tr><td colspan="2">${issues}</td></tr>` : ""}`;
+function checkIcon(passed: boolean): string {
+  return passed
+    ? `<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="6" fill="#16a34a"/><path d="M3.5 6l1.8 1.8L8.5 4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+    : `<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="6" fill="#dc2626"/><path d="M4 4l4 4M8 4l-4 4" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+}
+
+// Per-asset issue block: groups failures under the asset path as a heading
+function assetIssueBlock(asset: AssetRecord, prohibitedWords: ComplianceResult): string {
+  const issues: { label: string; message: string }[] = [];
+
+  if (!asset.compliance.logoPresence.passed) {
+    asset.compliance.logoPresence.issues.forEach((i) =>
+      issues.push({ label: "Logo", message: i.message })
+    );
+  }
+  if (!asset.compliance.brandColors.passed) {
+    asset.compliance.brandColors.issues.forEach((i) =>
+      issues.push({ label: "Brand colors", message: i.message })
+    );
+  }
+  // Prohibited-word issues scoped to this asset's locale
+  if (!prohibitedWords.passed) {
+    prohibitedWords.issues
+      .filter((i) => i.message.startsWith(`Prohibited word`) && i.message.includes(`${asset.locale} `))
+      .forEach((i) => issues.push({ label: "Words", message: i.message }));
+  }
+
+  if (!issues.length) return "";
+
+  return `
+  <div class="asset-issues">
+    <div class="asset-issues-path">${escapeXml(asset.productId)} / ${asset.ratio} / ${asset.locale.toUpperCase()} — ${escapeXml(asset.ratioLabel)}</div>
+    <ul>
+      ${issues.map((i) => `<li><span class="issue-label">${escapeXml(i.label)}</span> ${escapeXml(i.message)}</li>`).join("")}
+    </ul>
+  </div>`;
 }
 
 function renderHtml(
@@ -83,127 +111,193 @@ function renderHtml(
 ): string {
   const allLogoPass  = assets.every((a) => a.compliance.logoPresence.passed);
   const allColorPass = assets.every((a) => a.compliance.brandColors.passed);
+  const overallPass  = prohibitedWordsResult.passed && allLogoPass && allColorPass;
+  const hasLogo      = !!brief.brand?.logo;
+  const hasColors    = !!(brief.brand?.colors?.length);
+  const hasProhibitedWords = !!(brief.brand?.prohibitedWords?.length);
 
-  const logoAggregated: ComplianceResult = {
-    passed: allLogoPass,
-    issues: assets.flatMap((a) =>
-      a.compliance.logoPresence.issues.map((i) => ({ ...i, message: `[${a.path}] ${i.message}` }))
-    ),
-  };
-  const colorAggregated: ComplianceResult = {
-    passed: allColorPass,
-    issues: assets.flatMap((a) =>
-      a.compliance.brandColors.issues.map((i) => ({ ...i, message: `[${a.path}] ${i.message}` }))
-    ),
-  };
-
-  const overallPass = prohibitedWordsResult.passed && allLogoPass && allColorPass;
+  const failingAssets = assets.filter(
+    (a) => !a.compliance.logoPresence.passed || !a.compliance.brandColors.passed
+  );
 
   return `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${escapeXml(brief.campaignName)}</title>
+<title>${escapeXml(brief.campaignName)} — Report</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: system-ui, sans-serif; background: #0d0d0d; color: #d4d4d4; padding: 2rem; max-width: 1400px; margin: 0 auto; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #f9fafb; color: #111827; padding: 2rem; max-width: 1400px; margin: 0 auto; }
 
-  header { border-bottom: 1px solid #222; padding-bottom: 1.25rem; margin-bottom: 2rem; display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-  header h1 { font-size: 1.25rem; font-weight: 600; color: #f0f0f0; }
-  header p { font-size: 0.8rem; color: #666; }
+  /* ── Header ── */
+  header { border-bottom: 1px solid #e5e7eb; padding-bottom: 1.25rem; margin-bottom: 2rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  header h1 { font-size: 1.25rem; font-weight: 600; color: #111827; }
+  header .meta { font-size: 0.78rem; color: #6b7280; margin-top: 0.25rem; }
+  .overall-tag { font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border-radius: 99px; letter-spacing: 0.05em; white-space: nowrap; }
+  .overall-tag.pass { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+  .overall-tag.fail { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
 
   /* ── Compliance panel ── */
-  .compliance-panel { margin-bottom: 2.5rem; border: 1px solid #2a2a2a; border-radius: 8px; overflow: hidden; }
-  .compliance-panel .panel-header { padding: 0.9rem 1.1rem; display: flex; align-items: center; gap: 0.75rem; background: #111; border-bottom: 1px solid #2a2a2a; }
-  .compliance-panel .panel-header h2 { font-size: 0.85rem; font-weight: 600; color: #e0e0e0; letter-spacing: 0.04em; text-transform: uppercase; }
-  .overall-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .overall-dot.pass { background: #4ade80; box-shadow: 0 0 6px #4ade80; }
-  .overall-dot.fail { background: #f87171; box-shadow: 0 0 6px #f87171; }
+  .compliance-panel { margin-bottom: 2.5rem; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; background: #fff; }
+  .panel-header { padding: 0.75rem 1.2rem; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f3f4f6; }
+  .panel-header h2 { font-size: 0.72rem; font-weight: 600; color: #6b7280; letter-spacing: 0.07em; text-transform: uppercase; }
 
-  .compliance-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-  .check-block { padding: 1rem 1.1rem; border-right: 1px solid #1e1e1e; }
-  .check-block:last-child { border-right: none; }
-  .check-block h3 { font-size: 0.7rem; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.6rem; }
+  .compliance-checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0; border-bottom: 1px solid #f3f4f6; }
+  .check-cell { padding: 1rem 1.2rem; border-right: 1px solid #f3f4f6; }
+  .check-cell:last-child { border-right: none; }
+  .check-cell-label { font-size: 0.64rem; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.5rem; }
+  .check-row { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: #374151; padding: 0.25rem 0; }
+  .check-row.na { color: #9ca3af; font-style: italic; }
+  .check-row svg { flex-shrink: 0; }
 
-  table.checks { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
-  table.checks td { padding: 0.3rem 0; vertical-align: top; }
-  table.checks td:first-child { color: #a0a0a0; padding-right: 0.75rem; white-space: nowrap; }
+  /* ── Issue list ── */
+  .issues-section { padding: 1rem 1.2rem; }
+  .issues-section-title { font-size: 0.64rem; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.75rem; }
+  .asset-issues { margin-bottom: 0.75rem; padding: 0.65rem 0.9rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; }
+  .asset-issues-path { font-size: 0.72rem; font-weight: 600; color: #991b1b; margin-bottom: 0.4rem; font-family: ui-monospace, monospace; }
+  .asset-issues ul { padding-left: 1rem; }
+  .asset-issues li { font-size: 0.75rem; color: #b91c1c; margin-bottom: 0.2rem; line-height: 1.5; }
+  .issue-label { display: inline-block; font-size: 0.6rem; font-weight: 700; background: #dc2626; color: #fff; padding: 1px 5px; border-radius: 3px; margin-right: 0.35rem; vertical-align: middle; letter-spacing: 0.04em; }
 
-  .badge { font-size: 0.6rem; font-weight: 700; padding: 2px 6px; border-radius: 3px; letter-spacing: 0.05em; }
-  .badge.pass { background: #0f2a1a; color: #4ade80; border: 1px solid #1a4a2a; }
-  .badge.fail { background: #2a0f0f; color: #f87171; border: 1px solid #4a1a1a; }
-
-  ul.issues { margin-top: 0.35rem; padding-left: 1rem; font-size: 0.72rem; color: #f87171; }
-  ul.issues li { margin-bottom: 0.2rem; line-height: 1.4; }
+  /* ── Divider ── */
+  .section-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.85rem; }
+  .section-row span { font-size: 0.72rem; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.07em; white-space: nowrap; }
+  .section-row hr { flex: 1; border: none; border-top: 1px solid #e5e7eb; }
 
   /* ── Assets ── */
-  .section-label { font-size: 0.75rem; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.85rem; }
   .product { margin-bottom: 2.5rem; }
-
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem; }
-  .card { background: #131313; border: 1px solid #222; border-radius: 6px; overflow: hidden; }
-  .card.has-violation { border-color: #4a2a1a; }
-  .card img { width: 100%; display: block; }
-  .card footer { padding: 0.55rem 0.7rem; display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; }
+  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .card.has-violation { border-color: #f87171; }
+  .card img { width: 100%; display: block; object-fit: cover; }
 
-  .pill { font-size: 0.62rem; padding: 2px 7px; border-radius: 99px; font-weight: 500; }
-  .pill.locale  { background: #1e1e1e; color: #777; border: 1px solid #2e2e2e; }
-  .pill.gen     { background: #0f2a1a; color: #4ade80; }
-  .pill.reused  { background: #0f1e2a; color: #60a5fa; }
-  .pill.ok      { background: #0f2a1a; color: #4ade80; }
-  .pill.warn    { background: #2a1a0f; color: #fb923c; }
+  .card-body { padding: 0.6rem 0.75rem; border-top: 1px solid #f3f4f6; }
+
+  /* ratio/locale row */
+  .card-placement { font-size: 0.72rem; font-weight: 600; color: #111827; margin-bottom: 0.15rem; }
+  .card-sub { font-size: 0.65rem; color: #9ca3af; margin-bottom: 0.55rem; }
+
+  /* check rows inside card */
+  .card-checks { display: flex; flex-direction: column; gap: 0.2rem; }
+  .card-check { display: flex; align-items: center; gap: 0.35rem; font-size: 0.7rem; }
+  .card-check .ck-label { color: #6b7280; flex: 1; }
+  .card-check.ck-pass .ck-label { color: #374151; }
+  .card-check.ck-fail .ck-label { color: #dc2626; }
+  .card-check.ck-na  .ck-label { color: #9ca3af; font-style: italic; }
+  .card-check .ck-detail { font-size: 0.62rem; color: #ef4444; display: block; padding-left: 1.25rem; line-height: 1.4; margin-top: 0.1rem; }
+
+  /* source pill */
+  .card-footer { padding: 0.4rem 0.75rem; display: flex; align-items: center; gap: 0.35rem; border-top: 1px solid #f3f4f6; }
+  .pill { font-size: 0.6rem; padding: 2px 7px; border-radius: 99px; font-weight: 500; }
+  .pill.locale  { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
+  .pill.gen     { background: #faf5ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+  .pill.reused  { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
 </style>
 </head><body>
 
 <header>
   <div>
     <h1>${escapeXml(brief.campaignName)}</h1>
-    <p>${escapeXml(brief.brand?.name || "Unbranded")} &middot; ${assets.length} assets &middot; ${new Date().toLocaleDateString()}</p>
+    <p class="meta">${escapeXml(brief.brand?.name || "No brand")} &middot; ${assets.length} assets &middot; ${new Date().toLocaleDateString()}</p>
   </div>
+  <span class="overall-tag ${overallPass ? "pass" : "fail"}">${overallPass ? "All checks passed" : "Compliance issues found"}</span>
 </header>
 
 <!-- ── Compliance Panel ── -->
 <div class="compliance-panel">
   <div class="panel-header">
-    <span class="overall-dot ${overallPass ? "pass" : "fail"}"></span>
-    <h2>Compliance Report</h2>
+    <h2>Compliance</h2>
+    <span class="overall-tag ${overallPass ? "pass" : "fail"} " style="font-size:0.62rem">${overallPass ? "✓ Pass" : "✗ Fail"}</span>
   </div>
-  <div class="compliance-grid">
 
-    <div class="check-block">
-      <h3>Legal</h3>
-      <table class="checks">
-        ${checkRow("Prohibited words", prohibitedWordsResult)}
-      </table>
+  <div class="compliance-checks">
+    <div class="check-cell">
+      <p class="check-cell-label">Legal</p>
+      ${hasProhibitedWords
+        ? `<div class="check-row">${checkIcon(prohibitedWordsResult.passed)} Prohibited words</div>`
+        : `<div class="check-row na">— No prohibited words configured</div>`
+      }
     </div>
 
-    <div class="check-block">
-      <h3>Brand</h3>
-      <table class="checks">
-        ${checkRow("Logo presence", logoAggregated)}
-        ${checkRow("Brand colors", colorAggregated)}
-      </table>
+    <div class="check-cell">
+      <p class="check-cell-label">Brand — Logo</p>
+      ${hasLogo
+        ? `<div class="check-row">${checkIcon(allLogoPass)} Logo present on all assets</div>`
+        : `<div class="check-row na">— No logo configured</div>`
+      }
     </div>
 
+    <div class="check-cell">
+      <p class="check-cell-label">Brand — Colors</p>
+      ${hasColors
+        ? `<div class="check-row">${checkIcon(allColorPass)} Brand palette match (all assets)</div>`
+        : `<div class="check-row na">— No brand colors configured</div>`
+      }
+    </div>
   </div>
+
+  ${failingAssets.length || !prohibitedWordsResult.passed ? `
+  <div class="issues-section">
+    <p class="issues-section-title">Issues</p>
+    ${assets.map((a) => assetIssueBlock(a, prohibitedWordsResult)).join("")}
+    ${!prohibitedWordsResult.passed && prohibitedWordsResult.issues.some((i) => !assets.some((a) => i.message.includes(`${a.locale} `)))
+      ? `<div class="asset-issues">
+           <div class="asset-issues-path">Prohibited words (campaign-wide)</div>
+           <ul>${prohibitedWordsResult.issues.map((i) => `<li><span class="issue-label">Words</span> ${escapeXml(i.message)}</li>`).join("")}</ul>
+         </div>`
+      : ""}
+  </div>` : ""}
 </div>
 
 <!-- ── Generated Assets ── -->
 ${byProduct.map(({ product, assets: pa }) => `
 <div class="product">
-  <p class="section-label">${escapeXml(product.name)}</p>
+  <div class="section-row"><span>${escapeXml(product.name)}</span><hr></div>
   <div class="grid">
     ${pa.map((a) => {
-      const compliant = a.compliance.logoPresence.passed && a.compliance.brandColors.passed;
+      const logoOk   = !hasLogo  || a.compliance.logoPresence.passed;
+      const colorOk  = !hasColors || a.compliance.brandColors.passed;
+      const wordOk   = !hasProhibitedWords || !prohibitedWordsResult.issues.some((i) => i.message.includes(`${a.locale} `));
+      const compliant = logoOk && colorOk && wordOk;
+
+      // First issue message for inline detail (truncated)
+      const logoMsg  = a.compliance.logoPresence.issues[0]?.message ?? "";
+      const colorMsg = a.compliance.brandColors.issues[0]?.message ?? "";
+
       return `
     <div class="card${compliant ? "" : " has-violation"}">
-      <img src="${a.path}" alt="${escapeXml(a.productName)} ${a.ratio} ${a.locale}">
-      <footer>
+      <img src="${a.path}" alt="${escapeXml(a.productName)} ${a.ratio} ${a.locale}" loading="lazy">
+      <div class="card-body">
+        <div class="card-placement">${escapeXml(a.ratioLabel)}</div>
+        <div class="card-sub">${a.ratio} &middot; ${a.locale.toUpperCase()}</div>
+        <div class="card-checks">
+          ${hasLogo
+            ? `<div class="card-check ck-${a.compliance.logoPresence.passed ? "pass" : "fail"}">
+                 ${checkIcon(a.compliance.logoPresence.passed)}
+                 <span class="ck-label">Logo</span>
+               </div>${logoMsg ? `<span class="ck-detail">${escapeXml(logoMsg)}</span>` : ""}`
+            : `<div class="card-check ck-na">${checkIcon(true)}<span class="ck-label">Logo (n/a)</span></div>`
+          }
+          ${hasColors
+            ? `<div class="card-check ck-${a.compliance.brandColors.passed ? "pass" : "fail"}">
+                 ${checkIcon(a.compliance.brandColors.passed)}
+                 <span class="ck-label">Brand colors</span>
+               </div>${colorMsg ? `<span class="ck-detail">${escapeXml(colorMsg)}</span>` : ""}`
+            : `<div class="card-check ck-na">${checkIcon(true)}<span class="ck-label">Colors (n/a)</span></div>`
+          }
+          ${hasProhibitedWords
+            ? `<div class="card-check ck-${wordOk ? "pass" : "fail"}">
+                 ${checkIcon(wordOk)}
+                 <span class="ck-label">Prohibited words</span>
+               </div>`
+            : `<div class="card-check ck-na">${checkIcon(true)}<span class="ck-label">Words (n/a)</span></div>`
+          }
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="pill ${a.heroSource === "generated" ? "gen" : "reused"}">${a.heroSource === "generated" ? "AI Generated" : "Reused"}</span>
         <span class="pill locale">${a.locale.toUpperCase()}</span>
-        <span class="pill locale">${a.ratio}</span>
-        <span class="pill ${a.heroSource === "generated" ? "gen" : "reused"}">${a.heroSource}</span>
-        <span class="pill ${compliant ? "ok" : "warn"}">${compliant ? "✓" : "⚠"}</span>
-      </footer>
+      </div>
     </div>`;
     }).join("")}
   </div>

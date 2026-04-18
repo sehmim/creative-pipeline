@@ -65,37 +65,20 @@ function darken(hex: string, amount: number): string {
 }
 
 export interface OverlayColors {
-  scrim: string;    // base color for the gradient scrim
-  accent: string;   // CTA button and highlight color
-  ctaText: string;  // text color on top of the accent button
+  scrim: string;
 }
 
-// Picks the most useful scrim + accent pair from brand colors.
-// Scrim: darkest color (so the gradient stays readable).
-// Accent: most saturated non-dark color (stands out for CTA).
+// Returns the darkest brand color (or black) to use as the gradient scrim base.
 export function pickOverlayColors(brandColors?: string[]): OverlayColors {
   const parsed = (brandColors ?? []).map(hexToRgb).filter((c): c is Rgb => c !== null);
 
   if (!parsed.length) {
-    return { scrim: "#000000", accent: "#ffffff", ctaText: "#000000" };
+    return { scrim: "#000000" };
   }
 
-  // Scrim: darkest brand color; if none is dark enough, darken the primary
   const sorted = [...parsed].sort((a, b) => luminance(a) - luminance(b));
   const darkest = sorted[0];
   const scrim = luminance(darkest) < 0.15 ? rgbToHex(darkest) : darken(rgbToHex(sorted[0]), 0.5);
 
-  // Accent: most saturated color that isn't near-white (luminance < 0.8)
-  const candidates = parsed.filter((c) => luminance(c) < 0.8);
-  const accent = candidates.length
-    ? rgbToHex(candidates.reduce((best, c) => {
-        const sat = (rgb: Rgb) => Math.max(rgb.r, rgb.g, rgb.b) - Math.min(rgb.r, rgb.g, rgb.b);
-        return sat(c) > sat(best) ? c : best;
-      }))
-    : rgbToHex(parsed[0]);
-
-  // CTA text: white on dark accents, dark on light accents
-  const ctaText = luminance(hexToRgb(accent)!) > 0.4 ? "#1a1a1a" : "#ffffff";
-
-  return { scrim, accent, ctaText };
+  return { scrim };
 }

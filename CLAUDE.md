@@ -10,13 +10,13 @@ Never read or modify `.env`. It contains secrets (Replicate API key).
 
 ```bash
 # Run with example brief (uses inputsDir=inputs/, outputDir=outputs/)
-npx tsx src/cli.ts --brief inputs/payloads/td_back_to_school.json
+npx tsx src/cli.ts --brief inputs/campaigns/td_back_to_school.json
 
 # Custom paths
-npx tsx src/cli.ts --brief inputs/payloads/td_back_to_school.json --inputs ./inputs --output ./outputs
+npx tsx src/cli.ts --brief inputs/campaigns/td_back_to_school.json --inputs ./inputs --output ./outputs
 
 # Dry-run (validate brief only, no generation)
-npx tsx src/cli.ts --brief inputs/payloads/td_back_to_school.json --dry-run
+npx tsx src/cli.ts --brief inputs/campaigns/td_back_to_school.json --dry-run
 ```
 
 ## Stack

@@ -1,0 +1,30 @@
+{
+  "campaignName": "Live Loud Concert Series",
+
+  "resultingImagePrompt": "Rock and roll punk concert crowd, gritty underground venue, high-energy mosh pit, dramatic stage lighting, grainy film texture, bold typography, distressed poster design, torn paper edges, high contrast black and white with red accents, rebellious and chaotic atmosphere",
+
+  "products": [
+    {
+      "id": "general-admission",
+      "name": "General Admission Ticket",
+      "description": "Access to the full concert experience. Get close to the stage and feel the raw energy of a live punk show."
+    },
+    {
+      "id": "vip-pass",
+      "name": "VIP Backstage Pass",
+      "description": "Premium access with backstage entry, priority viewing, and an exclusive behind-the-scenes experience."
+    }
+  ],
+
+  "targeting": {
+    "audience": "Young adults aged 18-35, music fans, punk and rock enthusiasts, concert-goers seeking high-energy live experiences",
+    "regions": ["en"]
+  },
+
+  "messages": {
+    "en": {
+      "headline": "LIVE LOUD. NO RULES.",
+      "subhead": "One night. Pure chaos. Feel every second."
+    }
+  }
+}

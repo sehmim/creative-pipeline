@@ -38,13 +38,11 @@
   "messages": {
     "en": {
       "headline": "Bank Smarter This Semester",
-      "subhead": "$0 monthly fees. $0 annual fees. 100% student-friendly.",
-      "cta": "Open Your Account"
+      "subhead": "$0 monthly fees. $0 annual fees. 100% student-friendly."
     },
     "fr": {
       "headline": "Une banque pensée pour vos études",
       "subhead": "0 $ de frais mensuels. 0 $ de frais annuels. 100 % étudiant.",
-      "cta": "Ouvrir un compte",
       "font": ["Playfair Display"]
     }
   }

@@ -23,7 +23,6 @@ export function scanProhibitedWords(brief: Brief): ComplianceResult {
     const fields: [string, string | undefined][] = [
       ["headline", msg.headline],
       ["subhead", msg.subhead],
-      ["cta", msg.cta],
     ];
     for (const [field, text] of fields) {
       if (!text) continue;

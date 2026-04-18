@@ -1,0 +1,28 @@
+{
+  "campaignName": "Toronto Moving Day Made Easy",
+
+  "products": [
+    {
+      "id": "uhaul-20ft-truck",
+      "name": "20' Moving Truck Rental",
+      "description": "Spacious truck ideal for 2–3 bedroom moves. Easy loading ramp and reliable performance for city moves."
+    },
+    {
+      "id": "moving-box-bundle",
+      "name": "Moving Box Bundle",
+      "description": "Essential moving boxes in multiple sizes, designed for efficient packing and protection of belongings."
+    }
+  ],
+
+  "targeting": {
+    "audience": "Toronto renters and families moving during peak season, age 20-45, urban residents",
+    "regions": ["en"]
+  },
+
+  "messages": {
+    "en": {
+      "headline": "Moving Day Starts Here",
+      "subhead": "Reliable trucks and supplies for Toronto’s busiest moving days."
+    }
+  }
+}

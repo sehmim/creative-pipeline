@@ -26,7 +26,6 @@ export const ProductSchema = z.object({
 const LocaleMessageSchema = z.object({
   headline: z.string(),
   subhead: z.string().optional(),
-  cta: z.string().optional(),
   font: z.array(z.string()).optional(),
 });
 
@@ -34,7 +33,10 @@ export const BriefSchema = z.object({
   campaignName: z.string(),
   brand: BrandSchema.optional(),
   resultingImagePrompt: z.string().optional(),
-  products: z.array(ProductSchema).min(1),
+  products: z.array(ProductSchema).min(2).refine(
+    (ps) => new Set(ps.map((p) => p.id)).size === ps.length,
+    { message: "Product ids must be unique" }
+  ),
   targeting: z.object({
     audience: z.string(),
     regions: z.array(z.string()).min(1),

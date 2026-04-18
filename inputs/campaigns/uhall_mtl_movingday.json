@@ -1,0 +1,48 @@
+{
+  "campaignName": "Montreal Moving Day Made Easy",
+
+  "brand": {
+    "name": "U-Haul",
+    "description": "North America’s leading DIY moving and storage company. Practical, reliable, and accessible.",
+    "colors": ["#FF6A00", "#000000", "#FFFFFF"],
+    "font": ["Helvetica Neue", "Arial"],
+    "logo": {
+      "path": "brands/uhaul/logo.png",
+      "placement": "top-left",
+      "maxHeightPercent": 8
+    },
+    "referenceAssets": "brands/uhaul/",
+    "prohibitedWords": ["free truck", "guaranteed availability", "no cost move", "risk-free move"]
+  },
+
+  "resultingImagePrompt": "Montreal city street on July 1st moving day, U-Haul truck parked outside apartment, people carrying boxes and furniture, urban summer setting, realistic lifestyle scene",
+
+  "products": [
+    {
+      "id": "uhaul-20ft-truck",
+      "name": "20' Moving Truck Rental",
+      "description": "Spacious truck ideal for 2–3 bedroom moves. Easy loading ramp and reliable performance for city moves."
+    },
+    {
+      "id": "moving-box-bundle",
+      "name": "Moving Box Bundle",
+      "description": "Essential moving boxes in multiple sizes, designed for efficient packing and protection of belongings."
+    }
+  ],
+
+  "targeting": {
+    "audience": "Montreal renters and families moving on July 1st, age 20-45, urban residents",
+    "regions": ["en", "fr"]
+  },
+
+  "messages": {
+    "en": {
+      "headline": "Moving Day Starts Here",
+      "subhead": "Reliable trucks and supplies for Montreal’s busiest moving day."
+    },
+    "fr": {
+      "headline": "Le déménagement commence ici",
+      "subhead": "Camions et fournitures fiables pour le 1er juillet à Montréal."
+    }
+  }
+}

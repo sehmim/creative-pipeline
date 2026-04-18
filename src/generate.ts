@@ -109,12 +109,7 @@ async function composeVariant(
   const font = resolveFont(brief, locale);
 
   // SVG overlay keeps text deterministic and locale-swappable without re-generating the hero
-  const { scrim, accent, ctaText } = pickOverlayColors(brief.brand?.colors);
-  const btnH = Math.round(h * 0.065);
-  const btnW = Math.round(w * 0.42);
-  const btnX = Math.round((w - btnW) / 2);
-  const btnY = Math.round(h * 0.855);
-  const btnR = Math.round(btnH / 2);
+  const { scrim } = pickOverlayColors(brief.brand?.colors);
 
   const svg = `
     <svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
@@ -142,14 +137,6 @@ async function composeVariant(
             font-family="${font}, sans-serif"
             font-size="${Math.round(w * 0.027)}"
             fill="rgba(255,255,255,0.88)" text-anchor="middle">${escapeXml(msg.subhead)}</text>` : ""}
-
-      ${msg.cta ? `
-      <!-- CTA pill button using brand accent -->
-      <rect x="${btnX}" y="${btnY}" width="${btnW}" height="${btnH}" rx="${btnR}" fill="${accent}"/>
-      <text x="${w / 2}" y="${btnY + Math.round(btnH * 0.64)}"
-            font-family="${font}, sans-serif"
-            font-size="${Math.round(w * 0.028)}" font-weight="600"
-            fill="${ctaText}" text-anchor="middle">${escapeXml(msg.cta)}</text>` : ""}
     </svg>`;
 
   const composites: sharp.OverlayOptions[] = [
@@ -202,7 +189,8 @@ export async function runPipeline(briefPath: string, inputsDir: string, outputDi
   console.log(`Campaign: "${brief.campaignName}"`);
   console.log(`${brief.products.length} products × ${brief.targeting.regions.length} locales × ${ratioKeys.length} ratios = ${total} assets\n`);
 
-  const runDir = join(outputDir, `run_${Date.now()}`);
+  const slug = brief.campaignName.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  const runDir = join(outputDir, `${slug}_${Date.now()}`);
   const assets: AssetRecord[] = [];
 
   for (const product of brief.products) {

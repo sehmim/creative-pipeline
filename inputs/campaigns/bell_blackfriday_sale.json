@@ -1,0 +1,62 @@
+{
+  "campaignName": "Bell Back to School Campaign",
+
+  "brand": {
+    "name": "Bell",
+    "description": "Canada’s leading telecommunications provider delivering fast, reliable internet, mobility, and connectivity solutions. Built for modern digital life with a focus on speed, innovation, and nationwide coverage.",
+    "colors": ["#00549A", "#FFFFFF", "#00AEEF"],
+    "font": ["Helvetica Neue", "Arial", "Roboto"],
+    "logo": {
+      "path": "brands/bell/logo.png",
+      "placement": "top-left",
+      "maxHeightPercent": 6
+    },
+    "referenceAssets": "brands/bell",
+    "prohibitedWords": ["cheap", "low-end", "budget network", "unreliable"]
+  },
+
+  "resultingImagePrompt": "Modern student apartment in Montreal, laptop and smartphone in use, high-speed internet streaming on multiple devices, clean blue lighting accents, minimalistic tech aesthetic, confident young adults studying and relaxing, premium connectivity lifestyle",
+
+  "products": [
+    {
+      "id": "internet-400",
+      "name": "Fibe Internet 400",
+      "description": "Ultra-fast 400 Mbps internet designed for students and shared living. Stream lectures, game online, and connect multiple devices seamlessly. Reliable fiber-powered performance for everyday speed.",
+      "price": "$20/mo (first 12 months)"
+    },
+    {
+      "id": "internet-1gb",
+      "name": "Fibe Gigabit 1.5",
+      "description": "Next-level speed for power users. Perfect for 4K streaming, content creation, and heavy multitasking across multiple devices. Built for uninterrupted performance.",
+      "price": "$50/mo (first 12 months)"
+    },
+    {
+      "id": "mobility-student",
+      "name": "Student Unlimited Mobile Plan",
+      "description": "Stay connected on campus and beyond with unlimited data, nationwide coverage, and fast 5G speeds. Designed for students who are always on the move.",
+      "price": "$45/mo"
+    },
+    {
+      "id": "bundle-backtoschool",
+      "name": "Back to School Bundle",
+      "description": "Combine high-speed internet and mobile for maximum value. Seamless connectivity across home and mobile with exclusive student pricing.",
+      "price": "From $60/mo"
+    }
+  ],
+
+  "targeting": {
+    "audience": "Students aged 17-30, university and college attendees, young professionals, roommates sharing apartments, tech-savvy users needing reliable high-speed connectivity",
+    "regions": ["en", "fr"]
+  },
+
+  "messages": {
+    "en": {
+      "headline": "Power Your School Year with Bell",
+      "subhead": "Fast internet. Unlimited mobile. Everything you need to stay connected, focused, and entertained."
+    },
+    "fr": {
+      "headline": "Propulsez votre rentrée avec Bell",
+      "subhead": "Internet rapide. Mobile illimité. Tout ce qu’il vous faut pour rester connecté et productif."
+    }
+  }
+}
