@@ -5,7 +5,7 @@
   "type": "module",
   "engines": { "node": ">=20" },
   "scripts": {
-    "start": "tsx src/cli.ts --brief inputs/campaigns/branded_concert.json",
+    "start": "tsx src/cli.ts --campaign inputs/campaigns/branded_concert.json",
     "dev": "tsx src/cli.ts"
   },
   "dependencies": {

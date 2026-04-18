@@ -1,25 +1,17 @@
 import sharp from "sharp";
-import { type Brief } from "./schema";
+import { type CampaignPayload } from "./types";
 
-export interface ComplianceIssue {
-  type: "prohibited-word" | "logo-missing" | "brand-color-mismatch";
-  message: string;
-}
+export type { ComplianceIssue, ComplianceResult } from "./types";
 
-export interface ComplianceResult {
-  passed: boolean;
-  issues: ComplianceIssue[];
-}
-
-export function scanProhibitedWords(brief: Brief): ComplianceResult {
-  const prohibited = brief.brand?.prohibitedWords;
+export function scanProhibitedWords(campaignPayload: CampaignPayload): ComplianceResult {
+  const prohibited = campaignPayload.brand?.prohibitedWords;
   if (!prohibited?.length) return { passed: true, issues: [] };
 
   const wordSet = new Set(prohibited.map((w) => w.toLowerCase()));
   const issues: ComplianceIssue[] = [];
   const seen = new Set<string>();
 
-  for (const [locale, msg] of Object.entries(brief.messages)) {
+  for (const [locale, msg] of Object.entries(campaignPayload.messages)) {
     const fields: [string, string | undefined][] = [
       ["headline", msg.headline],
       ["subhead", msg.subhead],

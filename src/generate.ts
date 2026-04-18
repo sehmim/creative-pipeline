@@ -4,30 +4,22 @@ import Replicate from "replicate";
 import { readFileSync, writeFileSync, mkdirSync } from "fs";
 import { resolve, join, dirname, extname } from "path";
 import sharp from "sharp";
-import { BriefSchema, type Brief, type Product } from "./schema";
-import { scanProhibitedWords, checkLogoPresence, checkBrandColors, type ComplianceResult } from "./compliance";
-import { writeReport, type AssetRecord } from "./report";
+import { CampaignPayloadSchema } from "./schema";
+import { scanProhibitedWords, checkLogoPresence, checkBrandColors } from "./compliance";
+import { writeReport } from "./report";
 import { escapeXml, resolveFont, resolveReferenceAssets, pickOverlayColors } from "./util";
+import { RATIOS, type RatioKey, type CampaignPayload, type Product, type ComplianceResult, type ComplianceIssue, type AssetRecord } from "./types";
 
 const replicate = new Replicate();
 
-// Target dimensions for each social placement
-const RATIOS = {
-  "1x1":  { w: 1080, h: 1080, label: "Feed (Instagram, Facebook)" },
-  "9x16": { w: 1080, h: 1920, label: "Stories / Reels / TikTok" },
-  "16x9": { w: 1920, h: 1080, label: "YouTube / X / LinkedIn" },
-} as const;
-
-type RatioKey = keyof typeof RATIOS;
-
 // ── 1. Validation ───────────────────────────────────────────
 
-function validateBrief(filePath: string): Brief {
+function validateCampaignPayload(filePath: string): CampaignPayload {
   const raw = JSON.parse(readFileSync(filePath, "utf-8"));
-  const result = BriefSchema.safeParse(raw);
+  const result = CampaignPayloadSchema.safeParse(raw);
 
   if (!result.success) {
-    console.error("Brief validation failed:");
+    console.error("Campaign payload validation failed:");
     result.error.issues.forEach((i) => console.error(`  ${i.path.join(".")}: ${i.message}`));
     process.exit(1);
   }
@@ -45,24 +37,24 @@ function validateBrief(filePath: string): Brief {
 // ── 2. Prompt Building ──────────────────────────────────────
 
 // resultingImagePrompt is appended last so user instructions override auto-built context
-function buildPrompt(product: Product, brief: Brief): string {
+function buildPrompt(product: Product, campaignPayload: CampaignPayload): string {
   const parts = [
     `Commercial product photography of ${product.description}.`,
     `The product is the undisputed hero and sole focus of the image — centered, prominent, and sharply in focus. Nothing competes with it for attention.`,
-    `Target audience: ${brief.targeting.audience}.`,
+    `Target audience: ${campaignPayload.targeting.audience}.`,
     `Clean composition with ample negative space at the bottom third for text overlay. Studio lighting with a subtle spotlight on the product.`,
   ];
 
-  if (brief.brand?.description) parts.push(`Brand aesthetic: ${brief.brand.description}.`);
-  if (brief.brand?.colors?.length) {
+  if (campaignPayload.brand?.description) parts.push(`Brand aesthetic: ${campaignPayload.brand.description}.`);
+  if (campaignPayload.brand?.colors?.length) {
     // Forceful color instruction — drives the generated image toward brand palette so compliance checks pass
     parts.push(
-      `The entire scene must be dominated by these brand colors: ${brief.brand.colors.join(", ")}. ` +
+      `The entire scene must be dominated by these brand colors: ${campaignPayload.brand.colors.join(", ")}. ` +
       `Background, ambient lighting, shadows, surfaces, and environmental tones must all strongly reflect this palette. ` +
       `Do not introduce colors outside this palette.`
     );
   }
-  if (brief.resultingImagePrompt) parts.push(brief.resultingImagePrompt);
+  if (campaignPayload.resultingImagePrompt) parts.push(campaignPayload.resultingImagePrompt);
 
   return parts.join(" ");
 }
@@ -70,16 +62,17 @@ function buildPrompt(product: Product, brief: Brief): string {
 // ── 3. Image Generation ─────────────────────────────────────
 
 // One FLUX call per product — ratios are derived from this single 1:1 hero via sharp crop
-async function generateHero(product: Product, brief: Brief, inputsDir: string): Promise<Buffer> {
+async function generateHero(productId: string, campaignPayload: CampaignPayload, inputsDir: string): Promise<Buffer> {
+  const product = campaignPayload.products.find((p) => p.id === productId)!;
   const input: Record<string, any> = {
-    prompt: buildPrompt(product, brief),
+    prompt: buildPrompt(product, campaignPayload),
     aspect_ratio: "1:1",
     output_format: "png",
   };
 
   // referenceAssets influence generation style; brand.logo is composited separately post-gen
-  if (brief.brand?.referenceAssets) {
-    const files = resolveReferenceAssets(brief.brand.referenceAssets, inputsDir);
+  if (campaignPayload.brand?.referenceAssets) {
+    const files = resolveReferenceAssets(campaignPayload.brand.referenceAssets, inputsDir);
     if (files.length) {
       input.input_images = files.map((p) => {
         const buf = readFileSync(resolve(inputsDir, p));
@@ -101,15 +94,15 @@ async function composeVariant(
   heroBuffer: Buffer,
   ratio: RatioKey,
   locale: string,
-  brief: Brief,
+  campaignPayload: CampaignPayload,
   inputsDir: string
 ): Promise<Buffer> {
   const { w, h } = RATIOS[ratio];
-  const msg = brief.messages[locale];
-  const font = resolveFont(brief, locale);
+  const msg = campaignPayload.messages[locale];
+  const font = resolveFont(campaignPayload, locale);
 
   // SVG overlay keeps text deterministic and locale-swappable without re-generating the hero
-  const { scrim } = pickOverlayColors(brief.brand?.colors);
+  const { scrim } = pickOverlayColors(campaignPayload.brand?.colors);
 
   const svg = `
     <svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
@@ -143,8 +136,8 @@ async function composeVariant(
     { input: Buffer.from(svg), top: 0, left: 0 },
   ];
 
-  if (brief.brand?.logo) {
-    const logo = brief.brand.logo;
+  if (campaignPayload.brand?.logo) {
+    const logo = campaignPayload.brand.logo;
     const logoHeight = Math.round(h * ((logo.maxHeightPercent || 8) / 100));
     const logoBuffer = await sharp(resolve(inputsDir, logo.path))
       .resize({ height: logoHeight })
@@ -171,29 +164,29 @@ async function composeVariant(
 
 // ── Main Pipeline ───────────────────────────────────────────
 
-export async function runPipeline(briefPath: string, inputsDir: string, outputDir: string) {
-  const brief = validateBrief(briefPath);
+export async function runPipeline(campaignPayloadPath: string, inputsDir: string, outputDir: string) {
+  const campaignPayload = validateCampaignPayload(campaignPayloadPath);
 
   // Prohibited words check runs once before compositing — cheaper than per-asset
-  const prohibitedWordsResult = scanProhibitedWords(brief);
+  const prohibitedWordsResult = scanProhibitedWords(campaignPayload);
   if (!prohibitedWordsResult.passed) {
     console.warn("⚠  Compliance: prohibited words detected:");
-    prohibitedWordsResult.issues.forEach((i) => console.warn(`     ${i.message}`));
+    prohibitedWordsResult.issues.forEach((i: ComplianceIssue) => console.warn(`     ${i.message}`));
   } else {
     console.log("✓ Compliance: no prohibited words");
   }
 
   const ratioKeys = Object.keys(RATIOS) as RatioKey[];
-  const total = brief.products.length * ratioKeys.length * brief.targeting.regions.length;
+  const total = campaignPayload.products.length * ratioKeys.length * campaignPayload.targeting.regions.length;
 
-  console.log(`Campaign: "${brief.campaignName}"`);
-  console.log(`${brief.products.length} products × ${brief.targeting.regions.length} locales × ${ratioKeys.length} ratios = ${total} assets\n`);
+  console.log(`Campaign: "${campaignPayload.campaignName}"`);
+  console.log(`${campaignPayload.products.length} products × ${campaignPayload.targeting.regions.length} locales × ${ratioKeys.length} ratios = ${total} assets\n`);
 
-  const slug = brief.campaignName.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  const slug = campaignPayload.campaignName.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
   const runDir = join(outputDir, `${slug}_${Date.now()}`);
   const assets: AssetRecord[] = [];
 
-  for (const product of brief.products) {
+  for (const product of campaignPayload.products) {
     let heroBuffer: Buffer;
     let heroSource: "reused" | "generated";
     let prompt: string | undefined;
@@ -203,28 +196,28 @@ export async function runPipeline(briefPath: string, inputsDir: string, outputDi
       heroSource = "reused";
       console.log(`✓ Reused hero for "${product.name}"`);
     } else {
-      prompt = buildPrompt(product, brief);
-      heroBuffer = await generateHero(product, brief, inputsDir);
+      prompt = buildPrompt(product, campaignPayload);
+      heroBuffer = await generateHero(product.id, campaignPayload, inputsDir);
       heroSource = "generated";
       console.log(`✓ Generated hero for "${product.name}"`);
     }
 
     for (const ratio of ratioKeys) {
-      for (const locale of brief.targeting.regions) {
+      for (const locale of campaignPayload.targeting.regions) {
         const outPath = join(runDir, product.id, ratio, `${locale}.png`);
         mkdirSync(dirname(outPath), { recursive: true });
 
-        const buffer = await composeVariant(heroBuffer, ratio, locale, brief, inputsDir);
+        const buffer = await composeVariant(heroBuffer, ratio, locale, campaignPayload, inputsDir);
         writeFileSync(outPath, buffer);
 
         // Logo presence and brand color checks run in parallel — both read the same buffer
         const { w, h } = RATIOS[ratio];
         const [logoPresenceResult, brandColorsResult] = await Promise.all([
-          brief.brand?.logo
-            ? checkLogoPresence(buffer, brief.brand.logo.placement ?? "bottom-right", w, h, brief.brand.logo.maxHeightPercent ?? 8)
+          campaignPayload.brand?.logo
+            ? checkLogoPresence(buffer, campaignPayload.brand.logo.placement ?? "bottom-right", w, h, campaignPayload.brand.logo.maxHeightPercent ?? 8)
             : Promise.resolve({ passed: true, issues: [] } as ComplianceResult),
-          brief.brand?.colors?.length
-            ? checkBrandColors(buffer, brief.brand.colors)
+          campaignPayload.brand?.colors?.length
+            ? checkBrandColors(buffer, campaignPayload.brand.colors)
             : Promise.resolve({ passed: true, issues: [] } as ComplianceResult),
         ]);
 
@@ -250,6 +243,6 @@ export async function runPipeline(briefPath: string, inputsDir: string, outputDi
     }
   }
 
-  writeReport(runDir, brief, assets, prohibitedWordsResult);
+  writeReport(runDir, campaignPayload, assets, prohibitedWordsResult);
   console.log(`\nDone — ${assets.length} assets in ${runDir}`);
 }

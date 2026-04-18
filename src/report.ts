@@ -1,27 +1,13 @@
 import { writeFileSync } from "fs";
 import { join } from "path";
-import { type Brief } from "./schema";
-import { type ComplianceResult } from "./compliance";
+import { type CampaignPayload, type ComplianceResult, type AssetRecord } from "./types";
 import { escapeXml } from "./util";
 
-export interface AssetRecord {
-  productId: string;
-  productName: string;
-  ratio: string;
-  ratioLabel: string;
-  locale: string;
-  path: string;
-  heroSource: "reused" | "generated";
-  prompt?: string;
-  compliance: {
-    logoPresence: ComplianceResult;
-    brandColors: ComplianceResult;
-  };
-}
+export type { AssetRecord } from "./types";
 
 export function writeReport(
   runDir: string,
-  brief: Brief,
+  campaignPayload: CampaignPayload,
   assets: AssetRecord[],
   prohibitedWordsResult: ComplianceResult
 ) {
@@ -35,8 +21,8 @@ export function writeReport(
   writeFileSync(
     join(runDir, "report.json"),
     JSON.stringify({
-      campaignName: brief.campaignName,
-      brand: brief.brand?.name || "none",
+      campaignName: campaignPayload.campaignName,
+      brand: campaignPayload.brand?.name || "none",
       generatedAt: new Date().toISOString(),
       totalAssets: assets.length,
       compliance: {
@@ -52,14 +38,14 @@ export function writeReport(
     }, null, 2)
   );
 
-  const byProduct = brief.products.map((p) => ({
+  const byProduct = campaignPayload.products.map((p) => ({
     product: p,
     assets: assets.filter((a) => a.productId === p.id),
   }));
 
   writeFileSync(
     join(runDir, "report.html"),
-    renderHtml(brief, assets, byProduct, prohibitedWordsResult)
+    renderHtml(campaignPayload, assets, byProduct, prohibitedWordsResult)
   );
 }
 
@@ -104,17 +90,17 @@ function assetIssueBlock(asset: AssetRecord, prohibitedWords: ComplianceResult):
 }
 
 function renderHtml(
-  brief: Brief,
+  campaignPayload: CampaignPayload,
   assets: AssetRecord[],
-  byProduct: { product: Brief["products"][number]; assets: AssetRecord[] }[],
+  byProduct: { product: CampaignPayload["products"][number]; assets: AssetRecord[] }[],
   prohibitedWordsResult: ComplianceResult
 ): string {
   const allLogoPass  = assets.every((a) => a.compliance.logoPresence.passed);
   const allColorPass = assets.every((a) => a.compliance.brandColors.passed);
   const overallPass  = prohibitedWordsResult.passed && allLogoPass && allColorPass;
-  const hasLogo      = !!brief.brand?.logo;
-  const hasColors    = !!(brief.brand?.colors?.length);
-  const hasProhibitedWords = !!(brief.brand?.prohibitedWords?.length);
+  const hasLogo      = !!campaignPayload.brand?.logo;
+  const hasColors    = !!(campaignPayload.brand?.colors?.length);
+  const hasProhibitedWords = !!(campaignPayload.brand?.prohibitedWords?.length);
 
   const failingAssets = assets.filter(
     (a) => !a.compliance.logoPresence.passed || !a.compliance.brandColors.passed
@@ -124,7 +110,7 @@ function renderHtml(
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${escapeXml(brief.campaignName)} — Report</title>
+<title>${escapeXml(campaignPayload.campaignName)} — Report</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: system-ui, -apple-system, sans-serif; background: #f9fafb; color: #111827; padding: 2rem; max-width: 1400px; margin: 0 auto; }
@@ -197,8 +183,8 @@ function renderHtml(
 
 <header>
   <div>
-    <h1>${escapeXml(brief.campaignName)}</h1>
-    <p class="meta">${escapeXml(brief.brand?.name || "No brand")} &middot; ${assets.length} assets &middot; ${new Date().toLocaleDateString()}</p>
+    <h1>${escapeXml(campaignPayload.campaignName)}</h1>
+    <p class="meta">${escapeXml(campaignPayload.brand?.name || "No brand")} &middot; ${assets.length} assets &middot; ${new Date().toLocaleDateString()}</p>
   </div>
   <span class="overall-tag ${overallPass ? "pass" : "fail"}">${overallPass ? "All checks passed" : "Compliance issues found"}</span>
 </header>

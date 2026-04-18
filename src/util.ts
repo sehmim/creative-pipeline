@@ -1,6 +1,6 @@
 import { readdirSync, statSync } from "fs";
 import { resolve, join, extname } from "path";
-import { type Brief } from "./schema";
+import { type CampaignPayload } from "./types";
 
 export function escapeXml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -8,11 +8,11 @@ export function escapeXml(s: string): string {
 }
 
 // Font cascade: per-locale override → brand font → system sans-serif
-export function resolveFont(brief: Brief, locale: string): string {
-  const msgFonts = brief.messages[locale]?.font;
+export function resolveFont(campaignPayload: CampaignPayload, locale: string): string {
+  const msgFonts = campaignPayload.messages[locale]?.font;
   if (msgFonts?.length) return msgFonts.map((f) => `'${f}'`).join(", ");
 
-  if (brief.brand?.font?.length) return brief.brand.font.map((f) => `'${f}'`).join(", ");
+  if (campaignPayload.brand?.font?.length) return campaignPayload.brand.font.map((f) => `'${f}'`).join(", ");
 
   return "sans-serif";
 }
