@@ -1,0 +1,56 @@
+{
+  "campaignName": "Jazz Festival Instrument Sale",
+
+  "brand": {
+    "name": "Long & McQuade",
+    "description": "Canada’s largest and most trusted musical instrument retailer. Built for musicians of all levels, offering expert advice, massive selection, and a community-first approach to music.",
+    "colors": ["#000000", "#D71920", "#FFFFFF"],
+    "font": ["Helvetica Neue", "Arial", "Montserrat"],
+    "logo": {
+      "path": "brands/long-mcquade/logo.png",
+      "placement": "top-left",
+      "maxHeightPercent": 7
+    },
+    "referenceAssets": "brands/long-mcquade",
+    "prohibitedWords": ["cheap quality", "toy instruments", "fake gear", "knockoff"]
+  },
+
+  "resultingImagePrompt": "Montreal jazz festival atmosphere, live stage performance at night, musicians playing guitar and drums, warm stage lighting, instruments in sharp focus, energetic crowd in background, premium music gear aesthetic",
+
+  "products": [
+    {
+      "id": "electric-guitar-fender",
+      "name": "Fender Player Stratocaster Electric Guitar",
+      "description": "Iconic electric guitar perfect for jazz, blues, and modern styles. Sleek body, versatile tone, and professional-grade sound. Displayed in a stage-ready festival environment with dramatic lighting."
+    },
+    {
+      "id": "drum-kit-yamaha",
+      "name": "Yamaha Stage Custom Drum Kit",
+      "description": "High-quality drum kit built for live performance. Deep, punchy tones ideal for jazz and contemporary music. Featured in a live festival setup with cymbals and stage lighting."
+    },
+    {
+      "id": "acoustic-guitar-taylor",
+      "name": "Taylor Acoustic Guitar",
+      "description": "Premium acoustic guitar known for rich, warm tones. Perfect for intimate jazz sets and unplugged performances. Clean, elegant wood finish highlighted in a performance setting."
+    }
+  ],
+
+  "targeting": {
+    "audience": "Musicians aged 18-45, from beginners to professionals, jazz enthusiasts, festival performers, and hobbyists looking to upgrade or start their gear collection",
+    "regions": ["en", "fr"]
+  },
+
+  "messages": {
+    "en": {
+      "headline": "Find Your Sound This Festival Season",
+      "subhead": "From stage-ready guitars to full drum kits—gear up for jazz festival vibes.",
+      "cta": "Shop Instruments"
+    },
+    "fr": {
+      "headline": "Trouvez votre son pour le festival",
+      "subhead": "Guitares, batteries et plus — équipez-vous pour la saison des festivals.",
+      "cta": "Magasiner les instruments",
+      "font": ["Playfair Display"]
+    }
+  }
+}

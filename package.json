@@ -5,7 +5,7 @@
   "type": "module",
   "engines": { "node": ">=20" },
   "scripts": {
-    "start": "tsx src/cli.ts --brief inputs/payloads/td_back_to_school.json",
+    "start": "tsx src/cli.ts --brief inputs/payloads/long_and_mac_jazz_fest.json",
     "dry-run": "tsx src/cli.ts --brief inputs/payloads/td_back_to_school.json --dry-run",
     "dev": "tsx src/cli.ts"
   },

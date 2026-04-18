@@ -7,7 +7,7 @@ import sharp from "sharp";
 import { BriefSchema, type Brief, type Product } from "./schema";
 import { scanProhibitedWords, checkLogoPresence, checkBrandColors, type ComplianceResult } from "./compliance";
 import { writeReport, type AssetRecord } from "./report";
-import { escapeXml, resolveFont, resolveReferenceAssets } from "./util";
+import { escapeXml, resolveFont, resolveReferenceAssets, pickOverlayColors } from "./util";
 
 const replicate = new Replicate();
 
@@ -54,7 +54,14 @@ function buildPrompt(product: Product, brief: Brief): string {
   ];
 
   if (brief.brand?.description) parts.push(`Brand aesthetic: ${brief.brand.description}.`);
-  if (brief.brand?.colors?.length) parts.push(`Color palette: ${brief.brand.colors.join(", ")}.`);
+  if (brief.brand?.colors?.length) {
+    // Forceful color instruction — drives the generated image toward brand palette so compliance checks pass
+    parts.push(
+      `The entire scene must be dominated by these brand colors: ${brief.brand.colors.join(", ")}. ` +
+      `Background, ambient lighting, shadows, surfaces, and environmental tones must all strongly reflect this palette. ` +
+      `Do not introduce colors outside this palette.`
+    );
+  }
   if (brief.resultingImagePrompt) parts.push(brief.resultingImagePrompt);
 
   return parts.join(" ");
@@ -102,20 +109,47 @@ async function composeVariant(
   const font = resolveFont(brief, locale);
 
   // SVG overlay keeps text deterministic and locale-swappable without re-generating the hero
+  const { scrim, accent, ctaText } = pickOverlayColors(brief.brand?.colors);
+  const btnH = Math.round(h * 0.065);
+  const btnW = Math.round(w * 0.42);
+  const btnX = Math.round((w - btnW) / 2);
+  const btnY = Math.round(h * 0.855);
+  const btnR = Math.round(btnH / 2);
+
   const svg = `
-    <svg width="${w}" height="${h}">
-      <rect x="0" y="${h * 0.6}" width="${w}" height="${h * 0.4}" fill="rgba(0,0,0,0.45)"/>
-      <text x="${w / 2}" y="${h * 0.75}" font-family="${font}, sans-serif"
-            font-size="${Math.round(w * 0.05)}" font-weight="700"
-            fill="white" text-anchor="middle">${escapeXml(msg.headline)}</text>
+    <svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="scrim" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="${scrim}" stop-opacity="0"/>
+          <stop offset="40%"  stop-color="${scrim}" stop-opacity="0.55"/>
+          <stop offset="100%" stop-color="${scrim}" stop-opacity="0.92"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Soft gradient scrim over the bottom half -->
+      <rect x="0" y="${Math.round(h * 0.42)}" width="${w}" height="${Math.round(h * 0.58)}" fill="url(#scrim)"/>
+
+      <!-- Headline -->
+      <text x="${w / 2}" y="${Math.round(h * 0.70)}"
+            font-family="${font}, sans-serif"
+            font-size="${Math.round(w * 0.048)}" font-weight="700"
+            fill="#ffffff" text-anchor="middle"
+            filter="drop-shadow(0 1px 3px rgba(0,0,0,0.5))">${escapeXml(msg.headline)}</text>
+
       ${msg.subhead ? `
-      <text x="${w / 2}" y="${h * 0.82}" font-family="${font}, sans-serif"
-            font-size="${Math.round(w * 0.03)}"
-            fill="rgba(255,255,255,0.85)" text-anchor="middle">${escapeXml(msg.subhead)}</text>` : ""}
+      <!-- Subhead -->
+      <text x="${w / 2}" y="${Math.round(h * 0.775)}"
+            font-family="${font}, sans-serif"
+            font-size="${Math.round(w * 0.027)}"
+            fill="rgba(255,255,255,0.88)" text-anchor="middle">${escapeXml(msg.subhead)}</text>` : ""}
+
       ${msg.cta ? `
-      <text x="${w / 2}" y="${h * 0.92}" font-family="${font}, sans-serif"
-            font-size="${Math.round(w * 0.035)}" font-weight="600"
-            fill="white" text-anchor="middle">${escapeXml(msg.cta)}</text>` : ""}
+      <!-- CTA pill button using brand accent -->
+      <rect x="${btnX}" y="${btnY}" width="${btnW}" height="${btnH}" rx="${btnR}" fill="${accent}"/>
+      <text x="${w / 2}" y="${btnY + Math.round(btnH * 0.64)}"
+            font-family="${font}, sans-serif"
+            font-size="${Math.round(w * 0.028)}" font-weight="600"
+            fill="${ctaText}" text-anchor="middle">${escapeXml(msg.cta)}</text>` : ""}
     </svg>`;
 
   const composites: sharp.OverlayOptions[] = [
