@@ -2,6 +2,10 @@
 
 A CLI tool that generates localized social ad campaign assets from a JSON brief using FLUX 2 Pro for hero image generation and Sharp for composition.
 
+## Demo
+
+[![Watch the demo](https://drive.google.com/thumbnail?id=1dKnNCQ6-93lMfs56ebYD6T_0SMy5g3RD&sz=w640)](https://drive.google.com/file/d/1dKnNCQ6-93lMfs56ebYD6T_0SMy5g3RD/view?usp=sharing)
+
 ## Prerequisites
 
 - Node.js 20+
