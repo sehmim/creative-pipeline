@@ -21,6 +21,7 @@ export const ProductSchema = z.object({
   name: z.string(),
   description: z.string(),
   heroAsset: z.string().optional(),
+  productImage: z.string().optional(),
 });
 
 export const LocaleMessageSchema = z.object({

@@ -21,26 +21,22 @@
     {
       "id": "internet-400",
       "name": "Fibe Internet 400",
-      "description": "Ultra-fast 400 Mbps internet designed for students and shared living. Stream lectures, game online, and connect multiple devices seamlessly. Reliable fiber-powered performance for everyday speed.",
-      "price": "$20/mo (first 12 months)"
+      "description": "Ultra-fast 400 Mbps internet designed for students and shared living. Stream lectures, game online, and connect multiple devices seamlessly. Reliable fiber-powered performance for everyday speed."
     },
     {
       "id": "internet-1gb",
       "name": "Fibe Gigabit 1.5",
-      "description": "Next-level speed for power users. Perfect for 4K streaming, content creation, and heavy multitasking across multiple devices. Built for uninterrupted performance.",
-      "price": "$50/mo (first 12 months)"
+      "description": "Next-level speed for power users. Perfect for 4K streaming, content creation, and heavy multitasking across multiple devices. Built for uninterrupted performance."
     },
     {
       "id": "mobility-student",
       "name": "Student Unlimited Mobile Plan",
-      "description": "Stay connected on campus and beyond with unlimited data, nationwide coverage, and fast 5G speeds. Designed for students who are always on the move.",
-      "price": "$45/mo"
+      "description": "Stay connected on campus and beyond with unlimited data, nationwide coverage, and fast 5G speeds. Designed for students who are always on the move."
     },
     {
       "id": "bundle-backtoschool",
       "name": "Back to School Bundle",
-      "description": "Combine high-speed internet and mobile for maximum value. Seamless connectivity across home and mobile with exclusive student pricing.",
-      "price": "From $60/mo"
+      "description": "Combine high-speed internet and mobile for maximum value. Seamless connectivity across home and mobile with exclusive student pricing."
     }
   ],
 

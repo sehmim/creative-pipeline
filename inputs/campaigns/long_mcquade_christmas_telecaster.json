@@ -1,0 +1,51 @@
+{
+  "campaignName": "Long & McQuade Christmas Guitar Sale",
+
+  "brand": {
+    "name": "Long & McQuade",
+    "description": "Canada's largest and most trusted musical instrument retailer. Built for musicians of all levels, offering expert advice, massive selection, and a community-first approach to music.",
+    "colors": ["#000000", "#D71920", "#FFFFFF"],
+    "font": ["Helvetica Neue", "Arial", "Montserrat"],
+    "logo": {
+      "path": "brands/long-mcquade/logo.png",
+      "placement": "top-left",
+      "maxHeightPercent": 7
+    },
+    "referenceAssets": "brands/long-mcquade",
+    "prohibitedWords": ["cheap quality", "toy instruments", "fake gear", "knockoff"]
+  },
+
+  "resultingImagePrompt": "Festive Christmas setting with warm holiday lighting, subtle bokeh of gold and red ornaments in background, dark moody studio atmosphere, guitar center-stage under a warm spotlight, gift-wrapped boxes softly blurred in background, premium music gear aesthetic, cinematic holiday mood",
+
+  "products": [
+    {
+      "id": "telecaster-sunburst",
+      "name": "Fender Telecaster — 2-Color Sunburst",
+      "description": "Classic Fender Telecaster electric guitar in 2-Color Sunburst finish. Iconic single-cutaway ash body, two single-coil pickups, maple neck. Brilliant for country, rock, and blues. The guitar every player wants under the tree.",
+      "productImage": "products/long-mcquade/telecaster-sunburst.png"
+    },
+    {
+      "id": "telecaster-bundle",
+      "name": "Telecaster Starter Bundle",
+      "productImage": "products/long-mcquade/Telecaster_Starter_Bundle.png",
+      "description": "Fender Telecaster paired with a Fender Frontman 10G amp, guitar cable, picks, and strap — everything needed to start playing on Christmas morning. Perfect first guitar gift bundle."
+    }
+  ],
+
+  "targeting": {
+    "audience": "Guitar players aged 16-50, gift shoppers buying for musicians, music enthusiasts, beginners to intermediate players, parents shopping for teens, and gear collectors seeking a classic Fender",
+    "regions": ["en", "fr"]
+  },
+
+  "messages": {
+    "en": {
+      "headline": "Give the Gift of Tone",
+      "subhead": "Fender Telecaster — Canada's favourite Christmas guitar. In store & online at Long & McQuade."
+    },
+    "fr": {
+      "headline": "Offrez le cadeau du son",
+      "subhead": "Fender Telecaster — la guitare de Noël préférée du Canada. En magasin et en ligne chez Long & McQuade.",
+      "font": ["Playfair Display"]
+    }
+  }
+}

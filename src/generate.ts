@@ -41,9 +41,18 @@ function buildPrompt(product: Product, campaignPayload: CampaignPayload): string
   const parts = [
     `Commercial product photography of ${product.description}.`,
     `The product is the undisputed hero and sole focus of the image — centered, prominent, and sharply in focus. Nothing competes with it for attention.`,
+  ];
+
+  if (product.productImage) {
+    parts.push(
+      `Faithfully reproduce the exact product shown in the reference image — preserve its shape, label, packaging, and colors precisely. Do not alter or substitute the product.`
+    );
+  }
+
+  parts.push(
     `Target audience: ${campaignPayload.targeting.audience}.`,
     `Clean composition with ample negative space at the bottom third for text overlay. Studio lighting with a subtle spotlight on the product.`,
-  ];
+  );
 
   if (campaignPayload.brand?.description) parts.push(`Brand aesthetic: ${campaignPayload.brand.description}.`);
   if (campaignPayload.brand?.colors?.length) {
@@ -70,17 +79,26 @@ async function generateHero(productId: string, campaignPayload: CampaignPayload,
     output_format: "png",
   };
 
+  const inputImages: string[] = [];
+
+  // productImage goes first — FLUX treats first input_image as primary subject reference
+  if (product.productImage) {
+    const buf = readFileSync(resolve(inputsDir, product.productImage));
+    const mime = extname(product.productImage).toLowerCase() === ".png" ? "image/png" : "image/jpeg";
+    inputImages.push(`data:${mime};base64,${buf.toString("base64")}`);
+  }
+
   // referenceAssets influence generation style; brand.logo is composited separately post-gen
   if (campaignPayload.brand?.referenceAssets) {
     const files = resolveReferenceAssets(campaignPayload.brand.referenceAssets, inputsDir);
-    if (files.length) {
-      input.input_images = files.map((p) => {
-        const buf = readFileSync(resolve(inputsDir, p));
-        const mime = extname(p).toLowerCase() === ".png" ? "image/png" : "image/jpeg";
-        return `data:${mime};base64,${buf.toString("base64")}`;
-      });
-    }
+    files.forEach((p) => {
+      const buf = readFileSync(resolve(inputsDir, p));
+      const mime = extname(p).toLowerCase() === ".png" ? "image/png" : "image/jpeg";
+      inputImages.push(`data:${mime};base64,${buf.toString("base64")}`);
+    });
   }
+
+  if (inputImages.length) input.input_images = inputImages;
 
   console.log(`  Generating hero for "${product.name}"...`);
   const output = await replicate.run("black-forest-labs/flux-2-pro", { input });
