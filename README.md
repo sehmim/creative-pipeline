@@ -100,7 +100,7 @@ Brief JSON
     │
     ▼
 3. Hero generation — one FLUX 2 Pro call per product
-   (skipped if product.heroAsset is set)
+   (skipped if product.heroAsset is set; product.productImage is passed as subject reference if set)
     │
     ▼
 4. Composition — per (product × ratio × locale)
@@ -177,6 +177,8 @@ and optimistic mood, lifestyle photography.
 ## Key Design Decisions
 
 **One hero per product, not per ratio.** FLUX is called once per product at 1:1. All ratio variants are derived from that single image via Sharp's `attention`-based saliency crop. This keeps generation cost proportional to the number of products, not `products × ratios`.
+
+**`productImage` vs `heroAsset`.** Both accept a path to an existing image. `heroAsset` bypasses generation entirely — the file is used as-is. `productImage` still calls FLUX but injects the image as the first `input_image` so the model uses it as the subject anchor, reproducing the exact product (packaging, shape, label) while generating a styled scene around it. Use `heroAsset` when you already have a finished hero; use `productImage` when you have a product photo but want AI-generated art direction.
 
 **SVG overlay for text.** Text is rendered as a Sharp-composited SVG rather than baked into the prompt. This makes locale swapping free (no re-generation), keeps the headline/subhead pixel-accurate, and is deterministic across runs.
 
