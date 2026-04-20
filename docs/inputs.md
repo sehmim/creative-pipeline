@@ -9,8 +9,7 @@
       "id": "STRING",        // required — unique slug, used for output folder names (e.g. "td-student-visa")
       "name": "STRING",      // required — human-readable product name
       "description": "STRING", // required — injected into the FLUX image prompt as the subject
-      "heroAsset?": "STRING", // optional — path to an existing image relative to --inputs dir (e.g. "assets/hero.jpg"); skips AI generation for this product
-      "productImage?": "STRING" // optional — path to a product photo (PNG/JPG) relative to --inputs dir (e.g. "products/shampoo.png"); passed to FLUX as the primary subject reference so the generated hero faithfully reproduces the exact product; generation still runs (unlike heroAsset)
+      "heroAsset?": "STRING" // optional — path to an existing image relative to --inputs dir (e.g. "assets/hero.jpg"); skips AI generation for this product
     }
   ],
 
